@@ -4,11 +4,6 @@ local function is_tmux_running()
   return os.getenv("TMUX") ~= nil
 end
 
-local function yazi_callback(win, filename_path)
-  vim.api.nvim_win_close(win, true)
-  M.open_selected_file(filename_path)
-end
-
 function M.open_selected_file(filename_path)
   if vim.fn.filereadable(filename_path) == 0 then
     return
@@ -35,9 +30,7 @@ function M.open_selected_file(filename_path)
   vim.cmd(open_command .. ' ' .. vim.fn.fnameescape(filename))
 end
 
-function M.run_neovim_floating_window(dir)
-  dir = dir or '.'
-
+function M.run_neovim_floating_window(open_hook, close_hook)
   local width = vim.o.columns
   local height = vim.o.lines
 
@@ -60,36 +53,34 @@ function M.run_neovim_floating_window(dir)
 
   vim.api.nvim_win_set_option(win, 'winhighlight', 'Normal:Normal,FloatBorder:Comment')
 
-  local filename_path = '/tmp/yazi_selected'
-  os.execute("rm -rf " .. filename_path)
-
-  vim.fn.termopen('yazi --chooser-file=' .. filename_path .. ' ' .. dir, {
+  vim.fn.termopen(open_hook, {
     on_exit = function()
-      yazi_callback(win, filename_path)
+      vim.api.nvim_win_close(win, true)
+      close_hook("/tmp/yazi_selected")
     end
   })
 
   vim.cmd('startinsert')
 end
 
-function M.run_tmux_popup_window(dir)
-  dir = dir or '.'
-
-  local filename_path = '/tmp/yazi_selected'
-  os.execute("rm -rf " .. filename_path)
-  os.execute("rm -rf /tmp/yazi_vim_opener")
-
-  local command = 'tmux popup -E -w80% -h60% "yazi --chooser-file=' .. filename_path .. ' ' .. dir .. '"'
+function M.run_tmux_popup_window(open_hook, close_hook)
+  local command = 'tmux popup -E -w80% -h60% "' .. open_hook .. '"'
   os.execute(command)
 
-  M.open_selected_file(filename_path)
+  close_hook("/tmp/yazi_selected")
 end
 
 function M.open_explorer(dir)
+  dir = dir or '.'
+  local filename_path = '/tmp/yazi_selected'
+  os.execute("rm -rf " .. filename_path)
+  local open_hook = 'yazi --chooser-file=' .. filename_path .. ' ' .. dir
+  local close_hook = M.open_selected_file
+
   if is_tmux_running() then
-    M.run_tmux_popup_window(dir)
+    M.run_tmux_popup_window(open_hook, close_hook)
   else
-    M.run_neovim_floating_window(dir)
+    M.run_neovim_floating_window(open_hook, close_hook)
   end
 end
 
