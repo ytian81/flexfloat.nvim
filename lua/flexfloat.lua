@@ -34,7 +34,7 @@ function M.run_neovim_floating_window(open_hook, close_hook)
   local width = vim.o.columns
   local height = vim.o.lines
 
-  local win_height = math.floor(height * 0.6) + 2
+  local win_height = math.floor(height * 0.8) + 2
   local win_width = math.floor(width * 0.8)
   local row = math.floor((height - win_height) / 2)
   local col = math.floor((width - win_width) / 2)
@@ -64,7 +64,7 @@ function M.run_neovim_floating_window(open_hook, close_hook)
 end
 
 function M.run_tmux_popup_window(open_hook, close_hook)
-  local command = 'tmux popup -E -w80% -h60% "' .. open_hook .. '"'
+  local command = 'tmux popup -E -w80% -h80% "' .. open_hook .. '"'
   os.execute(command)
 
   close_hook("/tmp/yazi_selected")
